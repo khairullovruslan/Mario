@@ -97,16 +97,22 @@ class Player(pygame.sprite.Sprite):
         self.image = player_image
         self.rect = self.image.get_rect().move(
             tile_width * pos_x + 15, tile_height * pos_y + 5)
+        self.horiz = 'r'
+        self.vert = 'r'
 
     def update(self, *args, **kwargs) -> None:
         x, y = 0, 0
         if pygame.key.get_pressed()[K_LEFT]:
+            self.horiz = 'l'
             x -= tile_width * STEP // FPS
         if pygame.key.get_pressed()[K_RIGHT]:
+            self.horiz = 'r'
             x += tile_width * STEP / FPS
         if pygame.key.get_pressed()[K_UP]:
+            self.vert = 'u'
             y -= tile_width * STEP / FPS
         if pygame.key.get_pressed()[K_DOWN]:
+            self.vert = 'd'
             y += tile_width * STEP / FPS
         self.rect = self.rect.move(x, y)
         if pygame.sprite.spritecollideany(self, walls_group):
@@ -120,9 +126,22 @@ class Camera:
         self.dy = 0
 
     # сдвинуть объект obj на смещение камеры
-    def apply(self, obj):
+    def apply(self, obj, horiz, vert):
         obj.rect.x += self.dx
         obj.rect.y += self.dy
+        if horiz == 'r':
+            if obj.rect.x < 0:
+                obj.rect.x = 550 + obj.rect.x
+        else:
+
+            if obj.rect.x > 550:
+                obj.rect.x = obj.rect.x - 550
+        if vert == 'u':
+            if obj.rect.y > 550:
+                obj.rect.y = obj.rect.y - 550
+        else:
+            if obj.rect.y < 0:
+                obj.rect.y = 550 + obj.rect.y
 
     def update(self, target):
          self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
@@ -153,8 +172,9 @@ if __name__ == '__main__':
         'empty': empty_group
     }
     try:
+        level = load_level(input())
 
-        player, level_x, level_y = generate_level(load_level(input()))
+        player, level_x, level_y = generate_level(level)
 
     except Exception as e:
         print(e)
@@ -165,32 +185,16 @@ if __name__ == '__main__':
 
     while running:
         screen.fill('black')
-        # if pygame.mouse.get_focused():
-        #     screen.blit(image, pygame.mouse.get_pos())
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        #     if event.type == pygame.KEYDOWN:
-        #         if event.key == pygame.K_LEFT:
-        #             player.rect.x -= STEP
-        #         if event.key == pygame.K_RIGHT:
-        #             player.rect.x += STEP
-        #         #if event.key == pygame.K_DOWN:
-        #         #    player.rect.y += STEP
-        #         #if event.key == pygame.K_UP:
-        #             player.rect.y -= STEP
-        # if event.type == pygame.MOUSEBUTTONDOWN:
-        #     Landing(event.pos)
-        # if event.type == pygame.MOUSEMOTION:
-        #     if pygame.mouse.get_focused():
-        #         screen.blit(image, event.pos)
 
         tick = clock.tick()
         # изменяем ракурс камеры
         camera.update(player)
         # обновляем положение всех спрайтов
         for sprite in all_sprites:
-             camera.apply(sprite)
+             camera.apply(sprite, player.horiz, player.vert)
 
         all_sprites.draw(screen)
         player_group.draw(screen)
